@@ -28,7 +28,14 @@ docker cp feishu-minutes <container>:/home/node/.openclaw/workspace/skills/
 
 - OpenClaw 已安装并运行
 - 飞书 OpenClaw 官方插件（`@larksuite/openclaw-lark`）已安装且用户已完成基础授权
-- 飞书应用已在开放平台开通妙记相关权限（`minutes:minutes:readonly`、`minutes:minutes.transcript:export`）
+- 飞书应用已在开放平台开通妙记相关权限：
+  - `minutes:minutes` — 查看、创建、编辑及管理妙记文件
+  - `minutes:minutes:readonly` — 查看妙记文件
+  - `minutes:minutes.basic:read` — 获取妙记的基本信息
+  - `minutes:minutes.transcript:export` — 导出妙记转写的文字内容
+  - `minutes:minutes.media:export` — 下载妙记的音视频文件
+  - `minutes:minutes.statistics:read` — 获取妙记的统计信息
+  - `minutes:minutes.artifacts:read` — 获取妙记 AI 产物
 - 容器内有 Python 3 和 Node.js
 
 ## 配置
