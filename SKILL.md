@@ -24,7 +24,9 @@ metadata:
 ## ⚠️ 用户配置（部署时修改此处）
 
 <!-- 单人使用：留空即可，脚本自动选取唯一的 token -->
-<!-- 多人共用：改成自己的 .enc 文件名，如 cli_xxx_ou_xxx.enc -->
+<!-- 多人共用：改成自己的 .enc 文件名或完整绝对路径 -->
+<!-- 文件名示例：cli_xxx_ou_xxx.enc（在默认 store 目录中查找） -->
+<!-- 完整路径示例：/home/clouduser/.local/share/openclaw-feishu-uat/cli_xxx_ou_xxx.enc -->
 ENC_FILE = ``
 
 <!-- appSecret 环境变量名，多人共用时设为各自的变量名，如 DAIAN_FEISHU_APP_SECRET -->

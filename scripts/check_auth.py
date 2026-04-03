@@ -69,7 +69,20 @@ def _encrypt_with_node(plaintext_json, master_key_path, output_path):
 
 
 def read_plugin_store(enc_filename=None):
-    """返回 token_data 或 None。如果指定 enc_filename 则只读该文件。"""
+    """返回 token_data 或 None。如果指定 enc_filename 则只读该文件。
+    enc_filename 可以是文件名（在默认 store 目录中查找）或完整绝对路径。"""
+    if enc_filename and os.path.isabs(enc_filename):
+        # 完整路径模式：从 .enc 文件所在目录查找 master.key
+        enc_file = enc_filename
+        if not enc_file.endswith(".enc"):
+            enc_file += ".enc"
+        if not os.path.isfile(enc_file):
+            return None
+        master_key_path = os.path.join(os.path.dirname(enc_file), "master.key")
+        if not os.path.isfile(master_key_path):
+            return None
+        return _decrypt_with_node(enc_file, master_key_path)
+
     store_dir = _uat_store_dir()
     if not os.path.isdir(store_dir):
         return None
@@ -78,7 +91,7 @@ def read_plugin_store(enc_filename=None):
         return None
 
     if enc_filename:
-        # 指定文件
+        # 文件名模式：在默认 store 目录中查找
         enc_file = os.path.join(store_dir, enc_filename)
         if not enc_filename.endswith(".enc"):
             enc_file += ".enc"
