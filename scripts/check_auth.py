@@ -107,8 +107,8 @@ def save_token(token_data, user_open_id):
     _encrypt_with_node(json.dumps(token_data), master_key_path, os.path.join(store_dir, safe_name))
 
 
-def read_app_secret(app_id):
-    secret = os.environ.get("FEISHU_APP_SECRET", "")
+def read_app_secret(app_id, secret_env="FEISHU_APP_SECRET"):
+    secret = os.environ.get(secret_env, "")
     if secret:
         return secret
 
@@ -146,10 +146,23 @@ def read_app_secret(app_id):
                 if line.startswith("#") or "=" not in line:
                     continue
                 k, v = line.split("=", 1)
-                if k.strip() == "FEISHU_APP_SECRET":
+                if k.strip() == secret_env:
                     return v.strip()
     except FileNotFoundError:
         pass
+    # 兼容：如果自定义 env 名未匹配，回退尝试默认 FEISHU_APP_SECRET
+    if secret_env != "FEISHU_APP_SECRET":
+        try:
+            with open(env_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    if k.strip() == "FEISHU_APP_SECRET":
+                        return v.strip()
+        except FileNotFoundError:
+            pass
     return ""
 
 
@@ -279,6 +292,8 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="检查妙记权限授权")
     parser.add_argument("--enc-file", help="指定 token store 中的 .enc 文件名（多用户环境）")
+    parser.add_argument("--secret-env", default="FEISHU_APP_SECRET",
+                        help="指定 appSecret 的环境变量名（默认 FEISHU_APP_SECRET）")
     args = parser.parse_args()
 
     token_data = read_plugin_store(args.enc_file)
@@ -298,9 +313,9 @@ def main():
     # 需要授权
     app_id = token_data.get("appId", "")
     user_open_id = token_data.get("userOpenId", "")
-    app_secret = read_app_secret(app_id)
+    app_secret = read_app_secret(app_id, args.secret_env)
     if not app_secret:
-        print(json.dumps({"status": "error", "message": "无法获取 appSecret，请检查 ~/.openclaw/.env"}))
+        print(json.dumps({"status": "error", "message": f"无法获取 appSecret，请检查环境变量 {args.secret_env} 或 ~/.openclaw/openclaw.json"}))
         sys.exit(1)
 
     reason = "你的飞书授权已过期，需要重新授权。" if is_expired else "需要你授权**妙记查看权限**才能继续操作。"

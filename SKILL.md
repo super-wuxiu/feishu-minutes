@@ -27,7 +27,12 @@ metadata:
 <!-- 多人共用：改成自己的 .enc 文件名，如 cli_xxx_ou_xxx.enc -->
 ENC_FILE = ``
 
+<!-- appSecret 环境变量名，多人共用时设为各自的变量名，如 DAIAN_FEISHU_APP_SECRET -->
+<!-- 留空或不设置时默认使用 FEISHU_APP_SECRET -->
+SECRET_ENV = ``
+
 如果 ENC_FILE 不为空，以下所有命令需加上 `--enc-file {ENC}` 参数。如果为空则不加。
+如果 SECRET_ENV 不为空，以下所有命令需加上 `--secret-env {SECRET_ENV}` 参数。如果为空则不加。
 
 ---
 
@@ -44,7 +49,7 @@ ENC_FILE = ``
 ### 第一步：检查授权（必须执行，不可跳过）
 
 ```bash
-python3 {baseDir}/scripts/check_auth.py --enc-file {ENC}
+python3 {baseDir}/scripts/check_auth.py --enc-file {ENC} --secret-env {SECRET_ENV}
 ```
 
 返回值含义：
@@ -58,21 +63,21 @@ python3 {baseDir}/scripts/check_auth.py --enc-file {ENC}
 ### 第二步：调用妙记 API
 
 ```bash
-python3 {baseDir}/scripts/minutes.py info <url> --enc-file {ENC}
-python3 {baseDir}/scripts/minutes.py artifacts <url> --enc-file {ENC}
-python3 {baseDir}/scripts/minutes.py transcript <url> --speaker --timestamp --enc-file {ENC}
-python3 {baseDir}/scripts/minutes.py media <url> --enc-file {ENC}
-python3 {baseDir}/scripts/minutes.py statistics <url> --enc-file {ENC}
+python3 {baseDir}/scripts/minutes.py info <url> --enc-file {ENC} --secret-env {SECRET_ENV}
+python3 {baseDir}/scripts/minutes.py artifacts <url> --enc-file {ENC} --secret-env {SECRET_ENV}
+python3 {baseDir}/scripts/minutes.py transcript <url> --speaker --timestamp --enc-file {ENC} --secret-env {SECRET_ENV}
+python3 {baseDir}/scripts/minutes.py media <url> --enc-file {ENC} --secret-env {SECRET_ENV}
+python3 {baseDir}/scripts/minutes.py statistics <url> --enc-file {ENC} --secret-env {SECRET_ENV}
 ```
 
 ---
 
 ## 标准处理流程（收到妙记链接时）
 
-1. 执行 `check_auth.py --enc-file {ENC}`，等待返回 ok 或 authorized
-2. 执行 `minutes.py info <url> --enc-file {ENC}`
-3. 执行 `minutes.py artifacts <url> --enc-file {ENC}`
-4. 如果 artifacts 失败，执行 `minutes.py transcript <url> --speaker --timestamp --enc-file {ENC}`
+1. 执行 `check_auth.py --enc-file {ENC} --secret-env {SECRET_ENV}`，等待返回 ok 或 authorized
+2. 执行 `minutes.py info <url> --enc-file {ENC} --secret-env {SECRET_ENV}`
+3. 执行 `minutes.py artifacts <url> --enc-file {ENC} --secret-env {SECRET_ENV}`
+4. 如果 artifacts 失败，执行 `minutes.py transcript <url> --speaker --timestamp --enc-file {ENC} --secret-env {SECRET_ENV}`
 5. 汇总回复用户：标题、时长（duration 单位为毫秒，需换算）、会议总结、待办事项
 
 ---

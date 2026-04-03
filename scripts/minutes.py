@@ -117,8 +117,8 @@ def save_token_to_store(token_data, user_open_id):
     _encrypt_with_node(json.dumps(token_data), master_key_path, os.path.join(store_dir, safe_name))
 
 
-def _read_app_secret(app_id):
-    secret = os.environ.get("FEISHU_APP_SECRET", "")
+def _read_app_secret(app_id, secret_env="FEISHU_APP_SECRET"):
+    secret = os.environ.get(secret_env, "")
     if secret:
         return secret
 
@@ -156,10 +156,23 @@ def _read_app_secret(app_id):
                 if line.startswith("#") or "=" not in line:
                     continue
                 k, v = line.split("=", 1)
-                if k.strip() == "FEISHU_APP_SECRET":
+                if k.strip() == secret_env:
                     return v.strip()
     except FileNotFoundError:
         pass
+    # 兼容：如果自定义 env 名未匹配，回退尝试默认 FEISHU_APP_SECRET
+    if secret_env != "FEISHU_APP_SECRET":
+        try:
+            with open(env_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("#") or "=" not in line:
+                        continue
+                    k, v = line.split("=", 1)
+                    if k.strip() == "FEISHU_APP_SECRET":
+                        return v.strip()
+        except FileNotFoundError:
+            pass
     return ""
 
 
@@ -311,16 +324,16 @@ def device_flow_poll(app_id, app_secret, device_code, expires_in=240, interval=5
 
 # ── 自动增量授权 ──
 
-def auto_authorize(token_data):
+def auto_authorize(token_data, secret_env="FEISHU_APP_SECRET"):
     """token 过期或缺少妙记 scope 时，自动发卡片 + 轮询 + 保存新 token，返回新 accessToken"""
     app_id = token_data.get("appId", "")
     user_open_id = token_data.get("userOpenId", "")
-    app_secret = _read_app_secret(app_id)
+    app_secret = _read_app_secret(app_id, secret_env)
 
     if not app_secret:
         die(
             f"token 不可用，且无法获取 appSecret 发起授权。\n"
-            f"请检查 ~/.openclaw/.env 中的 FEISHU_APP_SECRET 配置。"
+            f"请检查环境变量 {secret_env} 或 ~/.openclaw/openclaw.json 配置。"
         )
 
     # 判断原因
@@ -385,7 +398,7 @@ def _token_is_valid(token_data):
     return needed.issubset(granted)
 
 
-def get_token(enc_filename=None):
+def get_token(enc_filename=None, secret_env="FEISHU_APP_SECRET"):
     user_token = os.environ.get("FEISHU_USER_TOKEN", "")
     if user_token:
         return user_token
@@ -399,7 +412,7 @@ def get_token(enc_filename=None):
         return token_data["accessToken"]
 
     # token 过期或缺少妙记权限 → 立即发授权卡片
-    return auto_authorize(token_data)
+    return auto_authorize(token_data, secret_env)
 
 
 # ── API ──
@@ -439,12 +452,12 @@ def api_get(path, token, params=None):
 # ── commands ──
 
 def cmd_info(args):
-    t = get_token(args.enc_file)
+    t = get_token(args.enc_file, args.secret_env)
     data = api_get(f"/open-apis/minutes/v1/minutes/{extract_minute_token(args.minute_token)}", t, {"user_id_type": args.user_id_type})
     print(json.dumps(data.get("data", data), indent=2, ensure_ascii=False))
 
 def cmd_transcript(args):
-    t = get_token(args.enc_file)
+    t = get_token(args.enc_file, args.secret_env)
     params = {}
     if args.speaker: params["need_speaker"] = "true"
     if args.timestamp: params["need_timestamp"] = "true"
@@ -453,17 +466,17 @@ def cmd_transcript(args):
     print(result if isinstance(result, str) else json.dumps(result.get("data", result), indent=2, ensure_ascii=False))
 
 def cmd_media(args):
-    t = get_token(args.enc_file)
+    t = get_token(args.enc_file, args.secret_env)
     data = api_get(f"/open-apis/minutes/v1/minutes/{extract_minute_token(args.minute_token)}/media", t)
     print(json.dumps(data.get("data", data), indent=2, ensure_ascii=False))
 
 def cmd_statistics(args):
-    t = get_token(args.enc_file)
+    t = get_token(args.enc_file, args.secret_env)
     data = api_get(f"/open-apis/minutes/v1/minutes/{extract_minute_token(args.minute_token)}/statistics", t, {"user_id_type": args.user_id_type})
     print(json.dumps(data.get("data", data), indent=2, ensure_ascii=False))
 
 def cmd_artifacts(args):
-    t = get_token(args.enc_file)
+    t = get_token(args.enc_file, args.secret_env)
     data = api_get(f"/open-apis/minutes/v1/minutes/{extract_minute_token(args.minute_token)}/artifacts", t)
     print(json.dumps(data.get("data", data), indent=2, ensure_ascii=False))
 
@@ -475,19 +488,24 @@ def main():
     p = sub.add_parser("info", help="获取妙记基本信息")
     p.add_argument("minute_token"); p.add_argument("--user-id-type", default="open_id")
     p.add_argument("--enc-file", help="指定 .enc 文件名")
+    p.add_argument("--secret-env", default="FEISHU_APP_SECRET", help="appSecret 的环境变量名")
 
     p = sub.add_parser("transcript", help="导出文字记录")
     p.add_argument("minute_token"); p.add_argument("--speaker", action="store_true")
     p.add_argument("--timestamp", action="store_true"); p.add_argument("--format", choices=["txt", "srt"])
     p.add_argument("--enc-file", help="指定 .enc 文件名")
+    p.add_argument("--secret-env", default="FEISHU_APP_SECRET", help="appSecret 的环境变量名")
 
     p = sub.add_parser("media", help="获取音视频下载链接"); p.add_argument("minute_token")
     p.add_argument("--enc-file", help="指定 .enc 文件名")
+    p.add_argument("--secret-env", default="FEISHU_APP_SECRET", help="appSecret 的环境变量名")
     p = sub.add_parser("statistics", help="获取统计数据")
     p.add_argument("minute_token"); p.add_argument("--user-id-type", default="open_id")
     p.add_argument("--enc-file", help="指定 .enc 文件名")
+    p.add_argument("--secret-env", default="FEISHU_APP_SECRET", help="appSecret 的环境变量名")
     p = sub.add_parser("artifacts", help="获取 AI 产物"); p.add_argument("minute_token")
     p.add_argument("--enc-file", help="指定 .enc 文件名")
+    p.add_argument("--secret-env", default="FEISHU_APP_SECRET", help="appSecret 的环境变量名")
 
     args = parser.parse_args()
     if not args.command:
