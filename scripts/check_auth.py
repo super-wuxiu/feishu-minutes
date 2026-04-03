@@ -111,6 +111,33 @@ def read_app_secret(app_id):
     secret = os.environ.get("FEISHU_APP_SECRET", "")
     if secret:
         return secret
+
+    # 优先从 openclaw.json / openclaw.jsonc 读取
+    for name in ("openclaw.json", "openclaw.jsonc"):
+        p = os.path.join(Path.home(), ".openclaw", name)
+        try:
+            with open(p) as f:
+                content = re.sub(r"//.*$", "", f.read(), flags=re.MULTILINE)
+                content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
+                cfg = json.loads(content)
+            feishu = cfg.get("channels", {}).get("feishu", {})
+
+            def resolve_val(val):
+                """解析 ${ENV_VAR} 引用"""
+                if isinstance(val, str) and val.startswith("${") and val.endswith("}"):
+                    env_key = val[2:-1]
+                    return os.environ.get(env_key, "")
+                return val
+
+            if resolve_val(feishu.get("appId", "")) == app_id:
+                return resolve_val(feishu.get("appSecret", ""))
+            for acct in feishu.get("accounts", {}).values():
+                if isinstance(acct, dict) and resolve_val(acct.get("appId", "")) == app_id:
+                    return resolve_val(acct.get("appSecret", ""))
+        except Exception:
+            continue
+
+    # 回退到 .env 文件
     env_path = os.path.join(Path.home(), ".openclaw", ".env")
     try:
         with open(env_path) as f:

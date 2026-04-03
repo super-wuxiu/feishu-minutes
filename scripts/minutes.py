@@ -122,21 +122,7 @@ def _read_app_secret(app_id):
     if secret:
         return secret
 
-    # 读 .env 文件
-    env_path = os.path.join(Path.home(), ".openclaw", ".env")
-    try:
-        with open(env_path) as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith("#") or "=" not in line:
-                    continue
-                k, v = line.split("=", 1)
-                if k.strip() == "FEISHU_APP_SECRET":
-                    return v.strip()
-    except FileNotFoundError:
-        pass
-
-    # 读 openclaw.json（处理明文和环境变量引用）
+    # 优先从 openclaw.json / openclaw.jsonc 读取
     for name in ("openclaw.json", "openclaw.jsonc"):
         p = os.path.join(Path.home(), ".openclaw", name)
         try:
@@ -160,6 +146,20 @@ def _read_app_secret(app_id):
                     return resolve_val(acct.get("appSecret", ""))
         except Exception:
             continue
+
+    # 回退到 .env 文件
+    env_path = os.path.join(Path.home(), ".openclaw", ".env")
+    try:
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                if k.strip() == "FEISHU_APP_SECRET":
+                    return v.strip()
+    except FileNotFoundError:
+        pass
     return ""
 
 
