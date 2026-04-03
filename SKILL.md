@@ -73,7 +73,7 @@ python3 {baseDir}/scripts/minutes.py statistics <url> --enc-file {ENC}
 2. 执行 `minutes.py info <url> --enc-file {ENC}`
 3. 执行 `minutes.py artifacts <url> --enc-file {ENC}`
 4. 如果 artifacts 失败，执行 `minutes.py transcript <url> --speaker --timestamp --enc-file {ENC}`
-5. 汇总回复用户：标题、时长、会议总结、待办事项
+5. 汇总回复用户：标题、时长（duration 单位为毫秒，需换算）、会议总结、待办事项
 
 ---
 
@@ -87,6 +87,7 @@ python3 {baseDir}/scripts/minutes.py statistics <url> --enc-file {ENC}
 
 ## 注意事项
 
+- `info` 返回的 `duration` 字段单位为**毫秒**，换算公式：秒 = duration / 1000，分钟 = duration / 60000
 - 接口频率限制 5 次/秒
 - artifacts 仅自建应用可用，失败时回退到 transcript
 - **禁止自行构造授权链接或 OAuth URL，一切授权通过 check_auth.py 脚本处理**
