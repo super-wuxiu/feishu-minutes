@@ -10,7 +10,26 @@
 - 获取统计数据（PV/UV）
 - 获取 AI 产物（总结、章节、待办）
 
-## 安装
+## 安装 / 更新
+
+### 一键安装（推荐）
+
+直接发送以下命令给 OpenClaw，它会自动完成安装或更新：
+
+```
+请执行以下命令来安装 feishu-minutes 技能：
+curl -fsSL https://raw.githubusercontent.com/super-wuxiu/feishu-minutes/main/install.sh | bash
+```
+
+或者在终端直接运行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/super-wuxiu/feishu-minutes/main/install.sh | bash
+```
+
+> **特性**：自动检测环境（本地 / Docker）、首次安装 / 增量更新、更新时保留用户配置（ENC_FILE、SECRET_ENV）。
+
+### 手动安装
 
 将 `feishu-minutes` 文件夹复制到 OpenClaw 的 skills 目录：
 
